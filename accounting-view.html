@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <script src="./node_modules/lodash/lodash.min.js"></script>
+    <script src="./node_modules/angular/angular.min.js"></script>
+
+    <link href="./node_modules/bootstrap/dist/css/bootstrap.css" rel="stylesheet">
+    <link href="./node_modules/bootstrap/dist/css/bootstrap-theme.css.map" rel="stylesheet">
+
+    <style>
+    #ov-accounting div.error-msg {
+        font-weight: bold;
+        color: #e20000;
+        background-color: #ffe5e5;
+        font-size: 18px;
+        margin-bottom: 10px;
+    }
+    </style>
+</head>
+
+<body>
+<div ng-app="myApp">
+    <div ng-controller="accountingViewCtrl">
+        <div id="ov-accounting" class="container">
+            <div ng-show="displayPanel === 'summary'">
+                <div>
+                    <h2>Accounting ({{tableData.length}} total)</h2>
+                    <button ng-click="newAccount()">New</button>
+                </div>
+
+                <div>
+                    <div class="error-msg" ng-show="(summaryErrorMsg !== '')">{{summaryErrorMsg}}</div>
+                    <div>
+                        <table>
+                            <tr>
+                                <td>Username </td>
+                                <td></td>
+                            </tr>
+                            <tr ng-repeat="account in tableData track by $index"
+                                ng-repeat-complete row-id="{{account.username}}">
+                                <td>{{account.username}}</td>
+                                <td>
+                                    <button ng-click="chgPwd(account)">Change Password</button>
+                                    <button ng-click="deleteAccount(account)">Delete</button>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div ng-show="displayPanel === 'config'">
+                <div>
+                    <h2>Accounting > {{configMode}}</h2>
+                </div>
+
+                <div>
+                    <div>
+                        <table>
+                            <tr>
+                                <td>Username</td>
+                                <td ng-show="configMode === 'New'">
+                                    <input type="text" ng-model="configAccount.username" placeholder="Text input (required)">
+                                </td>
+                                <td ng-show="configMode !== 'New'">{{configAccount.username}}</td>
+                            </tr>
+                            <tr>
+                                <td>Password</td>
+                                <td ng-show="displayPwd === true">
+                                    <input type="text" ng-model="configAccount.password" placeholder="Text input (required)">
+                                </td>
+                                <td ng-show="displayPwd === false">
+                                    <input type="password" ng-model="configAccount.password" placeholder="Text input (required)">
+                                </td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td>
+                                    <input type="checkbox" ng-model="displayPwd"> Show Password
+                                </td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td>
+                                    <div>
+                                        <button ng-show="configMode !== 'New'" ng-click="modifyAccount(configAccount)">Modify</button>
+                                        <button ng-show="configMode === 'New'" ng-click="createAccount(configAccount)">Create</button>
+                                        <button ng-click="showSummary()">Cancel</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="error-msg" ng-show="(configErrorMsg !== '')">{{configErrorMsg}}</div>
+                </div>
+            </div>
+        </div>
+    </div> <!-- accountingViewCtrl -->
+</div> <!-- myApp -->
+
+<script>
+    var app = angular.module('myApp', []);
+
+    app.filter('prettyJSON', function () {
+        function prettyPrintJson(json) {
+            return JSON ? JSON.stringify(json, null, '  ') : 'your browser doesnt support JSON so cant pretty print';
+        }
+
+        return prettyPrintJson;
+    });
+
+    var accounts = [
+        { username: 'mars' },
+        { username: 'onos' },
+        { username: 'karaf' }
+    ];
+
+    (function () {
+        'use strict';
+
+        app.controller('accountingViewCtrl', ['$scope', function ($scope) {
+            $scope.displayPanel = 'summary';
+            $scope.tableData = _.cloneDeep(accounts);;
+            $scope.summaryErrorMsg = '';
+            $scope.configErrorMsg = '';
+
+            $scope.displayPwd = false;
+
+            $scope.newAccount = function() {
+                $scope.configAccount = {
+                    username: '',
+                    password: ''
+                };
+
+                $scope.configErrorMsg = '';
+                $scope.displayPanel = 'config';
+                $scope.configMode = 'New';
+            };
+
+            $scope.chgPwd = function(user) {
+                $scope.configAccount = user;
+                $scope.configErrorMsg = '';
+                $scope.displayPanel = 'config';
+                $scope.configMode = 'Change Password';
+            };
+
+            $scope.createAccount = function(account) {
+                if (account.username === '') {
+                    $scope.configErrorMsg = 'The username is required.';
+                    return;
+                }
+
+                if (account.password === '') {
+                    $scope.configErrorMsg = 'The password is required.';
+                    return;
+                }
+
+                var index = $scope.tableData.findIndex(function(el) {
+                    return (el.username === account.username);
+                });
+
+                if (index !== -1) {
+                    $scope.configErrorMsg = 'The account is exists.';
+                    return;
+                }
+
+                delete account.password;
+                $scope.tableData.push(account);
+                $scope.displayPanel = 'summary';
+            };
+
+            $scope.modifyAccount = function(account) {
+                if (account.password === '') {
+                    $scope.configErrorMsg = 'The password is required.';
+                }
+            };
+
+            $scope.deleteAccount = function(account) {
+                var index = $scope.tableData.findIndex(function(el) {
+                    return (el.username === account.username);
+                });
+
+                if (index !== -1) {
+                    $scope.tableData.splice(index, 1);
+                }
+            };
+
+            $scope.showSummary = function() {
+                $scope.summaryErrorMsg = '';
+                $scope.displayPanel = 'summary';
+            };
+        }]);
+    }());
+
+</script>
+
+</body>
+</html>
